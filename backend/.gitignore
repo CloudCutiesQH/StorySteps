@@ -12,3 +12,5 @@ dist
 
 # Generated test build output
 scripts/output.html
+# LangGraph API
+.langgraph_api
