@@ -398,13 +398,27 @@ async function generateStory() {
       throw new Error('Failed to generate story. Please try again.')
     }
 
-    const htmlPage = await response.text()
+    type GenerateResponse = {
+      html: string
+      quiz: {
+        questions: {
+          question: string
+          options: string[]
+          correctAnswer: string
+        }[]
+      }
+    }
+
+    const {html, quiz} = await response.json() as GenerateResponse
+    const date = Date.now()
+
     sessionStorage.getItem('stories')
     const stories = JSON.parse(sessionStorage.getItem('stories') || '[]') as StoredStory[]
-    stories.push({ topic: topic.value, theme: theme.value, timestamp: Date.now() })
+    stories.push({ topic: topic.value, theme: theme.value, timestamp: date })
     sessionStorage.setItem('stories', JSON.stringify(stories))
     storedStories.value = stories
-    sessionStorage.setItem(`story-${Date.now()}`, htmlPage)
+    sessionStorage.setItem(`story-${date}`, html)
+    sessionStorage.setItem(`quiz-${date}`, JSON.stringify(quiz))
 
     agentMessages.value.push({
       id: messageId++,
@@ -415,7 +429,7 @@ async function generateStory() {
       isActive: false
     })
 
-    navigateTo('/storyviewer')
+    navigateTo('/story/' + stories[stories.length - 1].timestamp)
   } catch (err) {
     error.value = (err as Error).message || 'Failed to generate story. Please try again.'
   } finally {

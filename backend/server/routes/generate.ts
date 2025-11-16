@@ -4,6 +4,7 @@ import { OpenAI } from "openai";
 import { Story, Passage } from "twine-utils";
 import { compileStoryToHTML } from "../utils/storyCompiler";
 import { createStoryGraph, StoryGraphState } from "../utils/graph";
+import { zodResponseFormat } from "openai/helpers/zod.js";
 
 const RequestBodySchema = z.object({
   prompt: z.string().min(1),
@@ -167,5 +168,58 @@ export default defineEventHandler(async (event) => {
     passageInstances.find((p) => p.attributes.name === "Starting Passage") ||
     passageInstances[0];
 
-  return compileStoryToHTML(story);
+
+    // convert to twee, then generate quiz to go back with it
+
+  const twee = story.toTwee();
+  const quiz = await generateQuiz(twee);
+  const finalHtml = compileStoryToHTML(story);
+
+  return JSON.stringify({
+    html: finalHtml,
+    quiz,
+  })
 });
+
+type Quiz = {
+  questions: {
+    question: string;
+    options: string[];
+    correctAnswer: string;
+  }[];
+};
+const quizObject = z.object({
+    questions: z.array(
+      z.object({
+        question: z.string(),
+        options: z.array(z.string()).length(4),
+        correctAnswer: z.string(),
+      }),
+    )});
+
+async function generateQuiz(twee: string): Promise<Quiz> {
+  const openai = new OpenAI({
+    apiKey: process.env.GEMINI_API_KEY,
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+  });
+
+  const resp = await openai.chat.completions.parse({
+    model: "gemini-2.0-flash",
+    messages: [
+      {
+        role: "system",
+        content: "You are a helpful assistant that generates quizzes based on interactive stories.",
+      },
+      {
+        role: "user",
+        content: `Generate a quiz based on the following interactive story written in Twee format:\n\n${twee}\n\nThe quiz should consist of 5 multiple-choice questions that test comprehension of the story's plot, characters, and themes. Each question should have 4 answer options labeled A, B, C, and D, with one correct answer. Format the quiz as follows:\n\n1. Question text?\nA) Option 1\nB) Option 2\nC) Option 3\nD) Option 4\n\nProvide the correct answers at the end of the quiz.`,
+      },
+    ],
+    response_format: zodResponseFormat(quizObject, "quiz"),
+  })
+
+  resp.choices[0].message.parsed;
+  return resp.choices[0].message.parsed as unknown as Quiz;
+
+}
+
