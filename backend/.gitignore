@@ -9,3 +9,6 @@ dist
 
 # MacOS moment
 .DS_Store
+
+# Generated test build output
+scripts/output.html
