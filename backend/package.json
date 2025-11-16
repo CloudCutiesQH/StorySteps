@@ -8,12 +8,14 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.3",
     "h3": "^1.15.4",
     "nitropack": "^2.12.4",
     "zod": "^4.1.12"
   },
   "dependencies": {
     "@google/genai": "^1.29.1",
+    "nodemailer": "^7.0.10",
     "openai": "^6.9.0"
   }
 }
