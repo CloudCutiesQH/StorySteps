@@ -369,6 +369,31 @@ async function simulateAgentConversation() {
 async function generateStory() {
   isGenerating.value = true
   error.value = null
+  // CONNECTING CORE TO BACKEND FOR MVP
+  const response = await fetch('http://localhost:3001/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      prompt: topic.value,
+      theme: theme.value
+    })
+  })
+
+  if (!response.ok) {
+    error.value = 'Failed to generate story. Please try again.'
+    isGenerating.value = false
+    return
+  }
+
+  const htmlPage = await response.text()
+  sessionStorage.setItem('generatedStory', htmlPage)
+
+  // redirect to page with generated story via saving it to cookie and then v-dom there
+  navigateTo('/storyviewer')
+  return
+
 
   // Start agent conversation simulation
   await simulateAgentConversation()
