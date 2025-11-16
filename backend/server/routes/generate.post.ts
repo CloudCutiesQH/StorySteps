@@ -125,14 +125,20 @@ Produce 6-12 passages. Keep passages concise and self-contained.`
 
     // 2. Create the story and assign the INSTANCES to it.
     const story = new Story({
+        attributes: {
+            name: body.theme || 'Educational Story',
+            format: 'Harlowe',
+            'format-version': '3.3.9',
+            creator: 'twine-utils',
+            'creator-version': '3.1.0'
+        },
         passages: passageInstances, // Pass all instances here
         javascript: "", 
         stylesheet: "" 
     });
 
-    // Optional but good practice: explicitly set the start passage by name.
-    // The library often defaults to the first passage if you don't.
-    story.startPassage = passageInstances.find(p => p.attributes.name === 'The Glitch') || passageInstances[0];
+    // Set the first passage as the start passage
+    story.startPassage = passageInstances[0];
     const twineHTML = story.toHTML();
     
     // Inject the generated story HTML into your template
