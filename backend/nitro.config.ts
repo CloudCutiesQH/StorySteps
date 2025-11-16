@@ -6,6 +6,6 @@ export default defineNitroConfig({
   srcDir: "server",
   imports: false,
   runtimeConfig: { //https://nitro.build/guide/configuration
-    geminiApiKey: "not-a-token",
+    geminiApiKey: process.env.GEMINI_API_KEY || "not-a-token",
   }
 });
