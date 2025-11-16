@@ -188,7 +188,7 @@
           <!-- Error Display -->
           <div v-if="error" class="px-8 pb-8">
             <UAlert
-              color="red"
+              color="error"
               variant="soft"
               title="Generation Failed"
               :description="error"
@@ -243,6 +243,10 @@
 </template>
 
 <script setup lang="ts">
+import { onUnmounted, ref } from "vue";
+
+const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN ?? "http://localhost:3000";
+
 interface AgentMessage {
   id: number
   agentName: string
@@ -257,6 +261,9 @@ const theme = ref('')
 const isGenerating = ref(false)
 const error = ref<string | null>(null)
 const agentMessages = ref<AgentMessage[]>([])
+const streamId = ref('')
+let eventSource: EventSource | null = null
+let messageId = 0
 
 const examples = [
   {
@@ -285,47 +292,68 @@ const examples = [
   }
 ]
 
-// Agent conversation pipeline
-const agentPipeline = [
-  {
-    name: 'Analyzer',
-    initial: 'A',
-    color: 'bg-blue-500 text-white',
-    messages: [
-      (topic: string, theme: string) => `Analyzing topic: "${topic}"... Identifying key learning objectives.`,
-      (topic: string, theme: string) => `I've mapped out 5 core concepts that students should understand about ${topic}.`
-    ]
-  },
-  {
-    name: 'Storyteller',
-    initial: 'S',
-    color: 'bg-purple-500 text-white',
-    messages: [
-      (topic: string, theme: string) => `Received learning objectives. Now weaving them into "${theme}" narrative...`,
-      (topic: string, theme: string) => `Created story arc with 3 acts. Each act introduces new concepts naturally.`
-    ]
-  },
-  {
-    name: 'Brancher',
-    initial: 'B',
-    color: 'bg-pink-500 text-white',
-    messages: [
-      (topic: string, theme: string) => `Designing decision points... Students will have 8-12 meaningful choices.`,
-      (topic: string, theme: string) => `Branch structure complete. Each path reinforces different aspects of ${topic}.`
-    ]
-  },
-  {
-    name: 'Validator',
-    initial: 'V',
-    color: 'bg-green-500 text-white',
-    messages: [
-      (topic: string, theme: string) => `Reviewing educational accuracy and engagement levels...`,
-      (topic: string, theme: string) => `All learning objectives covered. Story is ready! 🎉`
-    ]
-  }
-]
+const nodeAgentMetadata: Record<string, { agentName: string; agentInitial: string; agentColor: string }> = {
+  retrieveDocs: { agentName: 'Doc Retriever', agentInitial: 'D', agentColor: 'bg-teal-500 text-white' },
+  brainstormConcepts: { agentName: 'IdeaSmith', agentInitial: 'I', agentColor: 'bg-purple-500 text-white' },
+  writerOutline: { agentName: 'StoryWriter', agentInitial: 'S', agentColor: 'bg-indigo-500 text-white' },
+  featureMuse: { agentName: 'MechanicsMuse', agentInitial: 'M', agentColor: 'bg-pink-500 text-white' },
+  developerReview: { agentName: 'BuilderBot', agentInitial: 'B', agentColor: 'bg-emerald-500 text-white' },
+  writerApproval: { agentName: 'Narrative Lead', agentInitial: 'N', agentColor: 'bg-blue-600 text-white' },
+  featureRewrite: { agentName: 'Mechanics Muse', agentInitial: 'R', agentColor: 'bg-orange-500 text-white' },
+  planPassages: { agentName: 'PassagePlanner', agentInitial: 'P', agentColor: 'bg-cyan-500 text-white' },
+  lintPassages: { agentName: 'LintCheck', agentInitial: 'L', agentColor: 'bg-slate-500 text-white' },
+  fixPassages: { agentName: 'LintFixer', agentInitial: 'F', agentColor: 'bg-amber-500 text-white' }
+}
 
-let messageId = 0
+const appendAgentMessages = (node: string, messages: string[]) => {
+  if (!messages || messages.length === 0) {
+    return
+  }
+  const meta = nodeAgentMetadata[node] ?? {
+    agentName: node,
+    agentInitial: node.charAt(0).toUpperCase() ?? 'A',
+    agentColor: 'bg-gray-500 text-white'
+  }
+  messages.forEach((message) => {
+    agentMessages.value.push({
+      id: messageId++,
+      agentName: meta.agentName,
+      agentInitial: meta.agentInitial,
+      agentColor: meta.agentColor,
+      content: message,
+      isActive: false
+    })
+  })
+}
+
+const closeStream = () => {
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
+}
+
+const openStream = () => {
+  closeStream()
+  streamId.value = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
+  eventSource = new EventSource(`${BACKEND_ORIGIN}/generatev3?streamId=${encodeURIComponent(streamId.value)}`)
+  eventSource.addEventListener("graph", (event) => {
+    try {
+      const payload = JSON.parse(event.data)
+      console.debug("agent stream", payload)
+      appendAgentMessages(payload.node, payload.messages ?? [])
+    } catch (err) {
+      console.error("Failed to parse agent stream event", err)
+    }
+  })
+  eventSource.onerror = () => {
+    closeStream()
+  }
+}
+
+onUnmounted(() => {
+  closeStream()
+})
 
 function useExample(example: typeof examples[0]) {
   if (isGenerating.value) return
@@ -333,92 +361,52 @@ function useExample(example: typeof examples[0]) {
   theme.value = example.theme
 }
 
-async function simulateAgentConversation() {
-  agentMessages.value = []
-  messageId = 0
-
-  for (let agentIndex = 0; agentIndex < agentPipeline.length; agentIndex++) {
-    const agent = agentPipeline[agentIndex]
-    
-    for (let msgIndex = 0; msgIndex < agent.messages.length; msgIndex++) {
-      // Add thinking indicator
-      const thinkingMsg: AgentMessage = {
-        id: messageId++,
-        agentName: agent.name,
-        agentInitial: agent.initial,
-        agentColor: agent.color,
-        content: '',
-        isActive: true
-      }
-      agentMessages.value.push(thinkingMsg)
-      
-      // Wait for "thinking" time
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000))
-      
-      // Replace thinking with actual message
-      const actualMessage = agent.messages[msgIndex](topic.value, theme.value)
-      thinkingMsg.content = actualMessage
-      thinkingMsg.isActive = false
-      
-      // Small pause before next message
-      await new Promise(resolve => setTimeout(resolve, 800))
-    }
-  }
-}
-
 async function generateStory() {
-  isGenerating.value = true
-  error.value = null
-  // CONNECTING CORE TO BACKEND FOR MVP
-  const response = await fetch('http://localhost:3001/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      prompt: topic.value,
-      theme: theme.value
-    })
-  })
-
-  if (!response.ok) {
-    error.value = 'Failed to generate story. Please try again.'
-    isGenerating.value = false
+  if (!topic.value || !theme.value) {
     return
   }
+  isGenerating.value = true
+  error.value = null
+  agentMessages.value = []
+  messageId = 0
+  openStream()
 
-  const htmlPage = await response.text()
-  sessionStorage.setItem('generatedStory', htmlPage)
+  try {
+    const response = await fetch(`${BACKEND_ORIGIN}/generatev3`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: topic.value,
+        theme: theme.value,
+        streamId: streamId.value
+      })
+    })
 
-  // redirect to page with generated story via saving it to cookie and then v-dom there
-  navigateTo('/storyviewer')
-  return
+    if (!response.ok) {
+      throw new Error('Failed to generate story. Please try again.')
+    }
 
+    const htmlPage = await response.text()
+    sessionStorage.setItem('generatedStory', htmlPage)
 
-  // Start agent conversation simulation
-  await simulateAgentConversation()
-  
-  // Add a bit more time to reach ~2 minutes total
-  // Agent conversation is ~20-25 seconds, so we add more "processing" time
-  await new Promise(resolve => setTimeout(resolve, 90000)) // Additional 90 seconds
-  
-  // Show completion message
-  const completionMsg: AgentMessage = {
-    id: messageId++,
-    agentName: 'System',
-    agentInitial: '✓',
-    agentColor: 'bg-gradient-to-br from-green-500 to-emerald-500 text-white',
-    content: '🎉 Story generation complete! Your interactive learning adventure is ready.',
-    isActive: false
+    agentMessages.value.push({
+      id: messageId++,
+      agentName: 'System',
+      agentInitial: '✓',
+      agentColor: 'bg-gradient-to-br from-green-500 to-emerald-500 text-white',
+      content: '🎉 Story generation complete! Redirecting to the viewer.',
+      isActive: false
+    })
+
+    navigateTo('/storyviewer')
+  } catch (err) {
+    error.value = (err as Error).message || 'Failed to generate story. Please try again.'
+  } finally {
+    closeStream()
+    isGenerating.value = false
   }
-  agentMessages.value.push(completionMsg)
-  
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  isGenerating.value = false
-  
-  // For now, just show success (no navigation since we don't have real stories yet)
-  alert('Story generated! (This is a simulation - in production, you would navigate to the story viewer)')
 }
 </script>
 
