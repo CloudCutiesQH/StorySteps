@@ -5,7 +5,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 import { OpenAI } from "openai";
-import { Story, Passage } from "twine-utils";
+import { Story, Passage, StoryFormat } from "twine-utils";
 
 const RequestBodySchema = z.object({
     prompt: z.string().min(1),
@@ -134,12 +134,9 @@ Produce 6-12 passages. Keep passages concise and self-contained.`
     // The library often defaults to the first passage if you don't.
     story.startPassage = passageInstances.find(p => p.attributes.name === 'The Glitch') || passageInstances[0];
     const twineHTML = story.toHTML();
-    
-    // Inject the generated story HTML into your template
-    const templatePath = join(process.cwd(), 'backend', 'server', 'routes', 'tempin.html');
-    let template = await readFile(templatePath, 'utf-8');
-    const finalHTML = template.replace('${{ story }}', twineHTML);
-    
+
+    const storyformat = new StoryFormat("./harlowe-min.js")
+    const finalHTML = storyformat.publish(story)
     // This will now work correctly!
     console.log(finalHTML);
     return finalHTML;
