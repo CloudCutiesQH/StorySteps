@@ -90,7 +90,7 @@ const route = useRoute()
 const router = useRouter()
 
 const storyId = computed(() => route.params.id as string)
-const storyUrl = computed(() => `/stories/${storyId.value}.html`)
+const storyUrl = ref<string>('')
 
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
@@ -98,16 +98,70 @@ const isLoading = ref(true)
 const hasError = ref(false)
 const isFullscreen = ref(false)
 
+// Load story from localStorage
+onMounted(() => {
+  const storyKey = `story-${storyId.value}`
+  const storyDataStr = localStorage.getItem(storyKey)
+
+  if (!storyDataStr) {
+    // Story not found in localStorage
+    isLoading.value = false
+    hasError.value = true
+    return
+  }
+
+  try {
+    const storyData = JSON.parse(storyDataStr)
+
+    // Create a blob URL from the story content
+    const blob = new Blob([storyData.content], { type: 'text/html' })
+    storyUrl.value = URL.createObjectURL(blob)
+  } catch (error) {
+    console.error('Failed to load story from localStorage:', error)
+    isLoading.value = false
+    hasError.value = true
+  }
+})
+
+// Cleanup blob URL on unmount
+onUnmounted(() => {
+  if (storyUrl.value && storyUrl.value.startsWith('blob:')) {
+    URL.revokeObjectURL(storyUrl.value)
+  }
+})
+
 // Navigation
 function goBack() {
   router.push('/')
 }
 
 function reloadStory() {
-  if (iframeRef.value) {
+  if (iframeRef.value && storyUrl.value) {
     isLoading.value = true
     hasError.value = false
-    iframeRef.value.src = iframeRef.value.src
+
+    // Revoke old blob URL and create new one
+    if (storyUrl.value.startsWith('blob:')) {
+      URL.revokeObjectURL(storyUrl.value)
+    }
+
+    const storyKey = `story-${storyId.value}`
+    const storyDataStr = localStorage.getItem(storyKey)
+
+    if (storyDataStr) {
+      try {
+        const storyData = JSON.parse(storyDataStr)
+        const blob = new Blob([storyData.content], { type: 'text/html' })
+        storyUrl.value = URL.createObjectURL(blob)
+
+        // Force iframe reload
+        iframeRef.value.src = storyUrl.value
+      } catch (error) {
+        console.error('Failed to reload story:', error)
+        hasError.value = true
+        isLoading.value = false
+      }
+    }
   }
 }
 
