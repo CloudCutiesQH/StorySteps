@@ -1,5 +1,5 @@
 import { outlinePrompt } from "../../prompts";
-import { withRateLimitRetry } from "../utils/rateLimitHandler";
+import { withRateLimitRetry } from "./rateLimitHandler";
 import { Annotation, StateGraph } from "@langchain/langgraph";
 import { OpenAI } from "openai";
 

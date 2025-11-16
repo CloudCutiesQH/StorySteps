@@ -1,0 +1,34 @@
+Harlowe 3 Quick Notes
+=======================
+
+Passages & Links
+- Start passage usually named "Starting Passage"; declare title with `:: Starting Passage`. Optional tags by appending `[tag1 tag2]` on the title line.
+- Create links with `[[Visible Text->Target Passage]]` or `[[Visible Text|Target Passage]]`.
+- Use hooks `[]` to scope macros: `(set: $var to 1)[...hook contents...]`.
+
+State & Variables
+- Prefix story variables with `$`. `(set: $progress to 0)` creates/updates.
+- `(if:)`, `(else-if:)`, `(else:)` control flow. Example: `(if: $score > 3)[Great job!]`.
+- `(set:)` can batch assignments: `(set: $a to 1, $b to 2)`.
+- `(print:)` outputs expressions; `(text-style:)` and `(color:)` style inline text.
+
+Player Choices
+- `(link:)` builds custom links that run code before transitioning.
+  Example: `(link: "Inspect the fossil")[(set: $clues to it + 1)(goto: "Analysis")]`.
+- `(choice:)` and `(passage:)` do not exist; rely on links or buttons.
+
+Data & UI
+- `(array:)` and `(datalist:)` help group values. Iterate with `(for: each _item in $items)[[_item]]`.
+- `(display: "Scene")` reuses another passage's content.
+- Use `(replace:)`/`(append:)` with hooks for dynamic UI updates.
+
+Debugging Tips
+- Verify closing brackets and parentheses. Harlowe is strict about syntax order `(macro: arguments)[hook]`.
+- Keep passage text concise; prefer descriptive tags (e.g., `education`, `quiz`, `ending`).
+
+Useful Macros
+- `(set: $visited to it + (passage:))` stores current passage name.
+- `(random: 1, 6)` returns an integer range.
+- `(prompt:)` asks the reader for text; consider sanitizing before using.
+
+Remember: Twine renders passages sequentially. Provide at least one path to an ending and guard loops with counters or conditions.
