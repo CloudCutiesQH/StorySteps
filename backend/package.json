@@ -4,13 +4,16 @@
   "scripts": {
     "build": "nitro build",
     "dev": "nitro dev",
-    "preview": "node .output/server/index.mjs"
+    "preview": "node .output/server/index.mjs",
+    "testbuild": "ts-node scripts/testbuild.ts"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "h3": "^1.15.4",
     "nitropack": "^2.12.4",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
     "@google/genai": "^1.29.1",

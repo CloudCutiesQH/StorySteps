@@ -1,16 +1,23 @@
 import { defineEventHandler, readValidatedBody } from "h3";
 import { z } from 'zod';
 import { outlinePrompt } from "../../prompts"
-import { readFile } from 'fs/promises';
-import { join } from 'path';
-
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
 import { OpenAI } from "openai";
-import { Story, Passage, StoryFormat } from "twine-utils";
+import { Story, Passage } from "twine-utils";
+import { fileURLToPath } from "url";
+import { compileTwee } from "./tweegoWrapper";
+
 
 const RequestBodySchema = z.object({
     prompt: z.string().min(1),
     theme: z.string().min(1)
 });
+
+const routeDir = dirname(fileURLToPath(import.meta.url));
+
+
+const htmlTemplate = readFileSync(join(routeDir, "..", "..", "assets", "template.html"), "utf-8");
 
 export default defineEventHandler(async (event) => {
 
@@ -104,7 +111,7 @@ export default defineEventHandler(async (event) => {
 - text: The passage content with Twine links using [[Link Text|Target Passage]] syntax and Harlowe macros like (set:), (if:), (link:)
 - tags: Optional array of tags
 
-Produce 6-12 passages. Keep passages concise and self-contained.`
+Produce 6-12 passages. Keep passages concise and self-contained. There is a special passage called StoryTitle that is the title of the story. The first passage is called Starting Passage and is where the story begins. Make sure the story has a coherent beginning, middle, and end. Use interactive elements to engage the reader. Only respond with the JSON object.`
             },
             { role: "user", content: `The theme is \n${body.theme} \n\nThe prompt is: \n${body.prompt}\n\nThe outline is: \n${refinedOutline}` },
         ],
@@ -127,17 +134,17 @@ Produce 6-12 passages. Keep passages concise and self-contained.`
     const story = new Story({
         passages: passageInstances, // Pass all instances here
         javascript: "", 
-        stylesheet: "" 
+        stylesheet: "",
     });
 
     // Optional but good practice: explicitly set the start passage by name.
     // The library often defaults to the first passage if you don't.
     story.startPassage = passageInstances.find(p => p.attributes.name === 'The Glitch') || passageInstances[0];
-    const twineHTML = story.toHTML();
+    // TODO: shitty fix, just pass in the story into the template as storydata. ideally we use publish method on StoryFormat, but the docs are shit
+    
+    return story;
 
-    const storyformat = new StoryFormat("./harlowe-min.js")
-    const finalHTML = storyformat.publish(story)
-    // This will now work correctly!
+
     console.log(finalHTML);
     return finalHTML;
 })
