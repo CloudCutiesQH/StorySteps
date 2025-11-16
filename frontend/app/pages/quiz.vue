@@ -1,16 +1,18 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+    <div class="bg-gradient-to-r from-pink-200 via-purple-200 to-blue-200 dark:from-pink-800/40 dark:via-purple-800/40 dark:to-blue-800/40 text-gray-800 dark:text-white shadow-lg">
       <UContainer class="py-8">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold mb-2">Story Quiz</h1>
-            <p class="text-purple-100">Review your journey and learn from your choices</p>
+            <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent dark:from-purple-300 dark:to-blue-300">
+              Story Quiz
+            </h1>
+            <p class="text-purple-700 dark:text-purple-200">Review your journey and learn from your choices</p>
           </div>
           <UButton
-            color="white"
-            variant="outline"
+            color="purple"
+            variant="soft"
             icon="i-heroicons-arrow-left"
             @click="goBack"
           >
@@ -24,20 +26,20 @@
     <UContainer class="py-12">
       <!-- Loading State -->
       <div v-if="isLoading" class="text-center py-20">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4 mx-auto" />
-        <p class="text-gray-500 dark:text-gray-400 text-lg">Loading quiz...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mb-4 mx-auto" />
+        <p class="text-purple-600 dark:text-purple-300 text-lg">Loading quiz...</p>
       </div>
 
       <!-- Quiz Results -->
       <div v-else class="max-w-4xl mx-auto space-y-8">
         <!-- Score Card -->
-        <UCard>
+        <UCard class="bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-blue-900/30 border-2 border-purple-200 dark:border-purple-700 shadow-xl">
           <div class="text-center py-6">
-            <div class="text-6xl mb-4">{{ scoreEmoji }}</div>
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <div class="text-6xl mb-4 animate-bounce">{{ scoreEmoji }}</div>
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent dark:from-pink-400 dark:via-purple-400 dark:to-blue-400 mb-2">
               Your Score: {{ score }}%
             </h2>
-            <p class="text-gray-600 dark:text-gray-400">
+            <p class="text-purple-700 dark:text-purple-300">
               You got {{ correctAnswers }} out of {{ totalQuestions }} questions correct
             </p>
           </div>
@@ -45,7 +47,9 @@
 
         <!-- Story Trace -->
         <div class="space-y-4">
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Your Story Journey</h3>
+          <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent dark:from-purple-300 dark:to-blue-300">
+            Your Story Journey
+          </h3>
 
           <div class="space-y-6">
             <UCard
@@ -112,15 +116,15 @@
                 <!-- Explanation -->
                 <div
                   v-if="question.explanation"
-                  class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                  class="mt-4 p-4 bg-gradient-to-r from-purple-50 via-blue-50 to-cyan-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-cyan-900/20 rounded-lg border-2 border-purple-200 dark:border-purple-700"
                 >
                   <div class="flex gap-2">
-                    <div class="text-blue-600 dark:text-blue-400 mt-0.5">💡</div>
+                    <div class="text-purple-600 dark:text-purple-400 mt-0.5">💡</div>
                     <div>
-                      <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                      <p class="text-sm font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent dark:from-purple-300 dark:to-blue-300 mb-1">
                         Learning Point
                       </p>
-                      <p class="text-sm text-blue-800 dark:text-blue-200">
+                      <p class="text-sm text-purple-800 dark:text-purple-200">
                         {{ question.explanation }}
                       </p>
                     </div>
@@ -131,19 +135,73 @@
           </div>
         </div>
 
+        <!-- Email Results Card -->
+        <UCard class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-2 border-purple-200 dark:border-purple-700">
+          <div class="text-center">
+            <div class="text-3xl mb-3">📧</div>
+            <h3 class="text-lg font-bold text-purple-900 dark:text-purple-100 mb-2">
+              Get Your Results & Flashcards by Email
+            </h3>
+            <p class="text-sm text-purple-700 dark:text-purple-300 mb-4">
+              Receive a beautiful summary of your quiz results and study flashcards
+            </p>
+            <div class="flex gap-3 justify-center items-end">
+              <div class="flex-1 max-w-xs">
+                <UInput
+                  v-model="emailAddress"
+                  type="email"
+                  placeholder="your@email.com"
+                  size="lg"
+                  :disabled="isSendingEmail"
+                />
+              </div>
+              <UButton
+                color="purple"
+                size="lg"
+                icon="i-heroicons-paper-airplane"
+                :loading="isSendingEmail"
+                :disabled="!emailAddress || isSendingEmail"
+                @click="sendResultsByEmail"
+              >
+                Send
+              </UButton>
+            </div>
+            <UAlert
+              v-if="emailSuccess"
+              color="green"
+              variant="soft"
+              title="Email Sent!"
+              description="Check your inbox for your quiz results and flashcards"
+              class="mt-4"
+            />
+            <UAlert
+              v-if="emailError"
+              color="red"
+              variant="soft"
+              title="Failed to Send"
+              :description="emailError"
+              class="mt-4"
+              :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
+              @close="emailError = null"
+            />
+          </div>
+        </UCard>
+
         <!-- Action Buttons -->
         <div class="flex gap-4 justify-center pt-6">
           <UButton
-            color="gray"
-            variant="outline"
+            color="purple"
+            variant="soft"
             size="lg"
             @click="goBack"
           >
             Back to Stories
           </UButton>
           <UButton
-            color="primary"
+            color="purple"
+            variant="solid"
             size="lg"
+            class="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             @click="retakeQuiz"
           >
             Try Another Story
@@ -178,6 +236,12 @@ interface QuizData {
 const router = useRouter()
 const route = useRoute()
 const isLoading = ref(true)
+
+// Email state
+const emailAddress = ref('')
+const isSendingEmail = ref(false)
+const emailSuccess = ref(false)
+const emailError = ref<string | null>(null)
 
 // Mock quiz data - replace with actual API call
 const quizData = ref<QuizData>({
@@ -268,8 +332,8 @@ onMounted(async () => {
 function getUserAnswerClass(question: QuizQuestion) {
   const isCorrect = question.userAnswer === question.correctAnswer
   return isCorrect
-    ? 'border-l-4 border-green-500'
-    : 'border-l-4 border-red-500'
+    ? 'border-l-4 border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20'
+    : 'border-l-4 border-pink-300 bg-gradient-to-r from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20'
 }
 
 function getChoiceClass(choice: Choice, question: QuizQuestion) {
@@ -277,14 +341,69 @@ function getChoiceClass(choice: Choice, question: QuizQuestion) {
   const isCorrectAnswer = choice.id === question.correctAnswer
 
   if (isUserAnswer && isCorrectAnswer) {
-    return 'border-green-500 bg-green-50 dark:bg-green-900/20'
+    return 'border-emerald-300 bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 shadow-md'
   } else if (isUserAnswer) {
-    return 'border-red-500 bg-red-50 dark:bg-red-900/20'
+    return 'border-pink-300 bg-gradient-to-r from-pink-100 to-rose-100 dark:from-pink-900/30 dark:to-rose-900/30 shadow-md'
   } else if (isCorrectAnswer) {
-    return 'border-green-300 bg-green-50 dark:bg-green-900/10'
+    return 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20'
   }
 
-  return 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+  return 'border-purple-200 dark:border-purple-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm'
+}
+
+async function sendResultsByEmail() {
+  if (!emailAddress.value || isSendingEmail.value) return
+
+  isSendingEmail.value = true
+  emailSuccess.value = false
+  emailError.value = null
+
+  try {
+    // Generate flashcards from quiz data
+    const flashCards = quizData.value.questions.map(q => ({
+      front: q.passage,
+      back: q.explanation || 'Review this concept from your story journey.'
+    }))
+
+    // Prepare quiz results
+    const quizResults = quizData.value.questions.map(q => ({
+      question: q.passage,
+      userAnswer: q.choices.find(c => c.id === q.userAnswer)?.text || q.userAnswer,
+      correctAnswer: q.choices.find(c => c.id === q.correctAnswer)?.text || q.correctAnswer,
+      isCorrect: q.userAnswer === q.correctAnswer,
+      explanation: q.explanation
+    }))
+
+    // Send to backend
+    const response = await $fetch('/api/send-quiz-results', {
+      method: 'POST',
+      body: {
+        recipientEmail: emailAddress.value,
+        storyTitle: quizData.value.storyTitle,
+        score: score.value,
+        totalQuestions: totalQuestions.value,
+        correctAnswers: correctAnswers.value,
+        quizResults,
+        flashCards
+      }
+    })
+
+    if (response.success) {
+      emailSuccess.value = true
+      // Clear email after 5 seconds
+      setTimeout(() => {
+        emailSuccess.value = false
+        emailAddress.value = ''
+      }, 5000)
+    } else {
+      emailError.value = response.error || 'Failed to send email'
+    }
+  } catch (error: any) {
+    console.error('Failed to send email:', error)
+    emailError.value = error.data?.error || error.message || 'Failed to send email. Please try again.'
+  } finally {
+    isSendingEmail.value = false
+  }
 }
 
 function goBack() {

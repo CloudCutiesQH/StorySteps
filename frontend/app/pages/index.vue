@@ -1,15 +1,114 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-      <UContainer class="py-16">
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <!-- Loading Screen Overlay - Agent Conversation -->
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="isGenerating"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm"
+      >
+        <div class="max-w-2xl w-full px-6">
+          <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                AI Agents at Work
+              </h3>
+              <p class="text-gray-600 dark:text-gray-400">
+                Watch our specialized agents collaborate to craft your story
+              </p>
+            </div>
+
+            <!-- Agent Conversation Feed -->
+            <div class="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <TransitionGroup
+                enter-active-class="transition-all duration-300"
+                enter-from-class="opacity-0 translate-y-2"
+                leave-active-class="transition-all duration-200"
+                leave-to-class="opacity-0"
+              >
+                <div
+                  v-for="message in agentMessages"
+                  :key="message.id"
+                  class="flex items-start gap-3"
+                >
+                  <!-- Agent Avatar -->
+                  <div 
+                    class="relative flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-md"
+                    :class="message.agentColor"
+                  >
+                    {{ message.agentInitial }}
+                    <div 
+                      v-if="message.isActive"
+                      class="absolute w-10 h-10 rounded-full animate-ping opacity-30"
+                      :class="message.agentColor"
+                    />
+                  </div>
+
+                  <!-- Message Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ message.agentName }}
+                      </span>
+                      <span 
+                        v-if="message.isActive"
+                        class="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400"
+                      >
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                        </span>
+                        thinking...
+                      </span>
+                    </div>
+                    <div 
+                      class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700"
+                      :class="{ 'opacity-50': message.isActive && !message.content }"
+                    >
+                      {{ message.content || '...' }}
+                    </div>
+                  </div>
+                </div>
+              </TransitionGroup>
+            </div>
+
+            <!-- Time Estimate -->
+            <div class="text-center pt-4 border-t border-gray-200 dark:border-gray-800">
+              <p class="text-xs text-gray-500 dark:text-gray-500">
+                ⏱️ This usually takes 1-2 minutes
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Hero Section - Shorter -->
+    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600">
+      <div class="absolute inset-0 bg-grid-white/10"></div>
+      <UContainer class="relative py-16">
         <div class="max-w-3xl mx-auto text-center">
-          <h1 class="text-5xl font-bold mb-4">StorySteps</h1>
-          <p class="text-xl text-purple-100 mb-2">
+          <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-4 border border-white/20">
+            <span class="text-white/90 text-sm font-medium">✨ AI-Powered Learning</span>
+          </div>
+          <h1 class="text-6xl font-bold mb-4 text-white tracking-tight">
+            StorySteps
+          </h1>
+          <p class="text-xl text-purple-100 mb-3 font-medium">
             Learn through interactive stories
           </p>
-          <p class="text-lg text-purple-200">
-            Create your own educational branching narrative. Tell us what you want to learn about!
+          <p class="text-base text-purple-200/90 max-w-2xl mx-auto">
+            Create your own educational branching narrative powered by AI. Choose any topic and watch it transform into an engaging adventure!
           </p>
         </div>
       </UContainer>
@@ -18,114 +117,124 @@
     <!-- Story Generator Form -->
     <UContainer class="py-12">
       <div class="max-w-2xl mx-auto">
-        <UCard>
-          <template #header>
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-              Create Your Story
-            </h2>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-              Choose a topic and theme to generate an interactive learning experience
-            </p>
-          </template>
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <!-- Header -->
+          <div class="bg-gradient-to-br from-gray-50 to-purple-50/30 dark:from-gray-800 dark:to-purple-950/20 px-8 py-6 border-b border-gray-200 dark:border-gray-800">
+            <div class="text-center">
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Create Your Story
+              </h2>
+              <p class="text-gray-600 dark:text-gray-400 text-sm">
+                Choose a topic and theme to generate an interactive learning experience
+              </p>
+            </div>
+          </div>
 
-          <form @submit.prevent="generateStory" class="space-y-6">
+          <!-- Form -->
+          <form @submit.prevent="generateStory" class="p-8 space-y-6">
             <!-- Topic Input -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="space-y-3">
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white">
                 What do you want to learn about?
               </label>
               <UInput
                 v-model="topic"
                 placeholder="e.g., Photosynthesis, Fractions, Water Cycle"
-                size="lg"
+                size="xl"
                 :disabled="isGenerating"
                 required
+                class="shadow-sm"
               />
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p class="text-sm text-gray-500 dark:text-gray-500">
                 Enter any educational topic you're curious about
               </p>
             </div>
 
             <!-- Theme Input -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <div class="space-y-3">
+              <label class="block text-sm font-semibold text-gray-900 dark:text-white">
                 Choose a story theme
               </label>
               <UInput
                 v-model="theme"
                 placeholder="e.g., Jack and the Giant, Space Adventure, Detective Mystery"
-                size="lg"
+                size="xl"
                 :disabled="isGenerating"
                 required
+                class="shadow-sm"
               />
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p class="text-sm text-gray-500 dark:text-gray-500">
                 Pick a fun theme to make learning engaging
               </p>
-            </div>
-
-            <!-- Age Rating (Optional) -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Age Group (Optional)
-              </label>
-              <USelect
-                v-model="ageRating"
-                :options="ageOptions"
-                size="lg"
-                :disabled="isGenerating"
-              />
             </div>
 
             <!-- Generate Button -->
             <UButton
               type="submit"
-              color="primary"
-              size="lg"
+              size="xl"
               block
-              :loading="isGenerating"
-              :disabled="!topic || !theme"
+              :disabled="!topic || !theme || isGenerating"
+              class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
             >
-              {{ isGenerating ? 'Generating Your Story...' : 'Generate Story' }}
+              <span class="flex items-center justify-center gap-2">
+                <svg v-if="!isGenerating" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {{ isGenerating ? 'Generating...' : 'Generate Story' }}
+              </span>
             </UButton>
           </form>
 
           <!-- Error Display -->
-          <UAlert
-            v-if="error"
-            color="red"
-            variant="soft"
-            title="Generation Failed"
-            :description="error"
-            class="mt-4"
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
-            @close="error = null"
-          />
-        </UCard>
+          <div v-if="error" class="px-8 pb-8">
+            <UAlert
+              color="red"
+              variant="soft"
+              title="Generation Failed"
+              :description="error"
+              :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'red', variant: 'link' }"
+              @close="error = null"
+            />
+          </div>
+        </div>
 
         <!-- Examples Section -->
-        <div class="mt-8">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Need inspiration? Try these:
-          </h3>
+        <div class="mt-12">
+          <div class="text-center mb-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              Need inspiration?
+            </h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm">
+              Try one of these popular combinations
+            </p>
+          </div>
+          
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UCard
+            <button
               v-for="example in examples"
               :key="example.topic"
-              class="cursor-pointer hover:shadow-lg transition-shadow"
               @click="useExample(example)"
+              :disabled="isGenerating"
+              class="group bg-white dark:bg-gray-900 rounded-xl shadow-md hover:shadow-xl border border-gray-200 dark:border-gray-800 p-5 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-left"
+              :class="example.borderColorHover"
             >
-              <div class="flex items-start gap-3">
-                <span class="text-3xl">{{ example.emoji }}</span>
-                <div>
-                  <h4 class="font-semibold text-gray-900 dark:text-white">
+              <div class="flex items-start gap-4">
+                <div class="text-3xl group-hover:scale-110 transition-transform">
+                  {{ example.emoji }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-base font-bold text-gray-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {{ example.topic }}
                   </h4>
                   <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Theme: {{ example.theme }}
+                    Theme: <span class="font-medium">{{ example.theme }}</span>
                   </p>
                 </div>
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-            </UCard>
+            </button>
           </div>
         </div>
       </div>
@@ -134,71 +243,188 @@
 </template>
 
 <script setup lang="ts">
+interface AgentMessage {
+  id: number
+  agentName: string
+  agentInitial: string
+  agentColor: string
+  content: string
+  isActive: boolean
+}
+
 const topic = ref('')
 const theme = ref('')
-const ageRating = ref('8-10')
 const isGenerating = ref(false)
 const error = ref<string | null>(null)
-
-const ageOptions = [
-  { label: '6-8 years', value: '6-8' },
-  { label: '8-10 years', value: '8-10' },
-  { label: '10-12 years', value: '10-12' },
-  { label: '12-14 years', value: '12-14' }
-]
+const agentMessages = ref<AgentMessage[]>([])
 
 const examples = [
   {
     topic: 'Photosynthesis',
     theme: 'Jack and the Giant Beanstalk',
-    emoji: '🌱'
+    emoji: '🌱',
+    borderColorHover: 'hover:border-green-300 dark:hover:border-green-700'
   },
   {
     topic: 'Fractions',
     theme: 'Pizza Party',
-    emoji: '🍕'
+    emoji: '🍕',
+    borderColorHover: 'hover:border-orange-300 dark:hover:border-orange-700'
   },
   {
     topic: 'Water Cycle',
     theme: 'Adventure Around the World',
-    emoji: '💧'
+    emoji: '💧',
+    borderColorHover: 'hover:border-blue-300 dark:hover:border-blue-700'
   },
   {
     topic: 'Gravity',
     theme: 'Space Detective',
-    emoji: '🔍'
+    emoji: '🔍',
+    borderColorHover: 'hover:border-purple-300 dark:hover:border-purple-700'
   }
 ]
 
+// Agent conversation pipeline
+const agentPipeline = [
+  {
+    name: 'Analyzer',
+    initial: 'A',
+    color: 'bg-blue-500 text-white',
+    messages: [
+      (topic: string, theme: string) => `Analyzing topic: "${topic}"... Identifying key learning objectives.`,
+      (topic: string, theme: string) => `I've mapped out 5 core concepts that students should understand about ${topic}.`
+    ]
+  },
+  {
+    name: 'Storyteller',
+    initial: 'S',
+    color: 'bg-purple-500 text-white',
+    messages: [
+      (topic: string, theme: string) => `Received learning objectives. Now weaving them into "${theme}" narrative...`,
+      (topic: string, theme: string) => `Created story arc with 3 acts. Each act introduces new concepts naturally.`
+    ]
+  },
+  {
+    name: 'Brancher',
+    initial: 'B',
+    color: 'bg-pink-500 text-white',
+    messages: [
+      (topic: string, theme: string) => `Designing decision points... Students will have 8-12 meaningful choices.`,
+      (topic: string, theme: string) => `Branch structure complete. Each path reinforces different aspects of ${topic}.`
+    ]
+  },
+  {
+    name: 'Validator',
+    initial: 'V',
+    color: 'bg-green-500 text-white',
+    messages: [
+      (topic: string, theme: string) => `Reviewing educational accuracy and engagement levels...`,
+      (topic: string, theme: string) => `All learning objectives covered. Story is ready! 🎉`
+    ]
+  }
+]
+
+let messageId = 0
+
 function useExample(example: typeof examples[0]) {
+  if (isGenerating.value) return
   topic.value = example.topic
   theme.value = example.theme
+}
+
+async function simulateAgentConversation() {
+  agentMessages.value = []
+  messageId = 0
+
+  for (let agentIndex = 0; agentIndex < agentPipeline.length; agentIndex++) {
+    const agent = agentPipeline[agentIndex]
+    
+    for (let msgIndex = 0; msgIndex < agent.messages.length; msgIndex++) {
+      // Add thinking indicator
+      const thinkingMsg: AgentMessage = {
+        id: messageId++,
+        agentName: agent.name,
+        agentInitial: agent.initial,
+        agentColor: agent.color,
+        content: '',
+        isActive: true
+      }
+      agentMessages.value.push(thinkingMsg)
+      
+      // Wait for "thinking" time
+      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000))
+      
+      // Replace thinking with actual message
+      const actualMessage = agent.messages[msgIndex](topic.value, theme.value)
+      thinkingMsg.content = actualMessage
+      thinkingMsg.isActive = false
+      
+      // Small pause before next message
+      await new Promise(resolve => setTimeout(resolve, 800))
+    }
+  }
 }
 
 async function generateStory() {
   isGenerating.value = true
   error.value = null
 
-  try {
-    // Call your backend API to generate the story
-    const response = await $fetch('/api/generate-story', {
-      method: 'POST',
-      body: {
-        topic: topic.value,
-        theme: theme.value,
-        ageRating: ageRating.value
-      }
-    })
-
-    // Response should include the story ID or HTML filename
-    // e.g., { storyId: 'generated-story-12345' }
-    const storyId = response.storyId || 'teststory'
-
-    // Navigate to the story viewer page
-    navigateTo(`/story/${storyId}`)
-  } catch (err: any) {
-    error.value = err.message || 'Failed to generate story. Please try again.'
-    isGenerating.value = false
+  // Start agent conversation simulation
+  await simulateAgentConversation()
+  
+  // Add a bit more time to reach ~2 minutes total
+  // Agent conversation is ~20-25 seconds, so we add more "processing" time
+  await new Promise(resolve => setTimeout(resolve, 90000)) // Additional 90 seconds
+  
+  // Show completion message
+  const completionMsg: AgentMessage = {
+    id: messageId++,
+    agentName: 'System',
+    agentInitial: '✓',
+    agentColor: 'bg-gradient-to-br from-green-500 to-emerald-500 text-white',
+    content: '🎉 Story generation complete! Your interactive learning adventure is ready.',
+    isActive: false
   }
+  agentMessages.value.push(completionMsg)
+  
+  await new Promise(resolve => setTimeout(resolve, 1500))
+  
+  isGenerating.value = false
+  
+  // For now, just show success (no navigation since we don't have real stories yet)
+  alert('Story generated! (This is a simulation - in production, you would navigate to the story viewer)')
 }
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: rgb(243 244 246);
+  border-radius: 9999px;
+}
+
+:global(.dark) .custom-scrollbar::-webkit-scrollbar-track {
+  background-color: rgb(31 41 55);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(209 213 219);
+  border-radius: 9999px;
+}
+
+:global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(75 85 99);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(156 163 175);
+}
+
+:global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(107 114 128);
+}
+</style>
