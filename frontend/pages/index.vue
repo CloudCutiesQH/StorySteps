@@ -21,7 +21,24 @@
         Explore Stories
       </h2>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Loading State -->
+      <div v-if="pending" class="text-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4 mx-auto" />
+        <p class="text-gray-500 dark:text-gray-400 text-lg">Loading stories...</p>
+      </div>
+
+      <!-- Error State -->
+      <div v-else-if="error" class="text-center py-20">
+        <div class="text-6xl mb-4">😕</div>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Unable to Load Stories</h3>
+        <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">{{ error.message }}</p>
+        <UButton color="primary" @click="refresh">
+          Try Again
+        </UButton>
+      </div>
+
+      <!-- Stories Grid -->
+      <div v-else-if="stories && stories.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <UCard
           v-for="story in stories"
           :key="story.id"
@@ -68,7 +85,7 @@
             </div>
 
             <!-- Author -->
-            <p v-if="story.author" class="text-xs text-gray-500 dark:text-gray-500">
+            <p v-if="story.author" class="text-xs text-gray-500 dark:text-gray-400">
               by {{ story.author }}
             </p>
 
@@ -87,9 +104,10 @@
 
       <!-- Empty State -->
       <div
-        v-if="stories.length === 0"
+        v-else
         class="text-center py-20"
       >
+        <div class="text-6xl mb-4">📚</div>
         <p class="text-gray-500 dark:text-gray-400 text-lg">
           No stories available yet. Check back soon!
         </p>
@@ -110,69 +128,8 @@ interface Story {
   author?: string
 }
 
-// Hardcoded mock data
-const stories = ref<Story[]>([
-  {
-    id: 'photosynthesis-adventure',
-    title: 'Photosynthesis Adventure',
-    description: 'Journey as a water molecule through a plant leaf and discover how sunlight creates food.',
-    ageRating: '8-10',
-    tags: ['science', 'biology', 'plants'],
-    coverColor: 'bg-gradient-to-br from-green-400 to-emerald-600',
-    emoji: '🌱',
-    author: 'AI Agent Team'
-  },
-  {
-    id: 'fraction-quest',
-    title: 'The Fraction Quest',
-    description: 'Help the Pizza Kingdom divide their feast fairly among the royal families.',
-    ageRating: '7-9',
-    tags: ['math', 'fractions', 'problem-solving'],
-    coverColor: 'bg-gradient-to-br from-orange-400 to-red-500',
-    emoji: '🍕',
-    author: 'AI Agent Team'
-  },
-  {
-    id: 'water-cycle',
-    title: 'Around the World in Water Drops',
-    description: 'Experience the water cycle from the perspective of a single water droplet.',
-    ageRating: '6-8',
-    tags: ['science', 'earth', 'weather'],
-    coverColor: 'bg-gradient-to-br from-blue-400 to-cyan-600',
-    emoji: '💧',
-    author: 'AI Agent Team'
-  },
-  {
-    id: 'gravity-detective',
-    title: 'The Gravity Detective',
-    description: 'Solve mysteries using your knowledge of gravity and motion in this physics adventure.',
-    ageRating: '10-12',
-    tags: ['physics', 'gravity', 'newton'],
-    coverColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
-    emoji: '🔍',
-    author: 'AI Agent Team'
-  },
-  {
-    id: 'cell-city',
-    title: 'Cell City Adventures',
-    description: 'Explore a living cell reimagined as a bustling city with organelles as buildings.',
-    ageRating: '9-11',
-    tags: ['biology', 'cells', 'anatomy'],
-    coverColor: 'bg-gradient-to-br from-pink-400 to-rose-600',
-    emoji: '🏙️',
-    author: 'AI Agent Team'
-  },
-  {
-    id: 'democracy-island',
-    title: 'Democracy Island',
-    description: 'Build a society and learn about voting, laws, and civic responsibility.',
-    ageRating: '11-13',
-    tags: ['civics', 'government', 'society'],
-    coverColor: 'bg-gradient-to-br from-yellow-400 to-amber-600',
-    emoji: '🏝️',
-    author: 'AI Agent Team'
-  }
-])
+// Fetch stories from backend API
+const { data: stories, pending, error, refresh } = await useFetch<Story[]>('/api/stories')
 
 function getAgeRatingColor(ageRating: string): string {
   const age = parseInt(ageRating.split('-')[0])
