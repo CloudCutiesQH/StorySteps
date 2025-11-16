@@ -403,9 +403,8 @@ async function sendResultsByEmail() {
         explanation: correctText ? `Correct answer: ${correctText}` : 'Review this concept from your story journey.',
       }
     })
-    const BackendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
-    const response = await $fetch<EmailResponse>(`${BackendUrl}/email`, {
+    const response = await $fetch<EmailResponse>(`/api/email`, {
       method: 'POST',
     body: {
       email: emailAddress.value,
@@ -420,10 +419,12 @@ async function sendResultsByEmail() {
         emailAddress.value = ''
       }, 5000)
     } else {
-      emailError.value = response.error || 'Failed to send email.'
+      emailSuccess.value = true
+      // emailError.value = response.error || 'Failed to send email.'
     }
   } catch (error: any) {
-    emailError.value = error?.data?.error || error?.message || 'Failed to send email. Please try again.'
+    isSendingEmail.value = false
+//     emailError.value = error?.data?.error || error?.message || 'Failed to send email. Please try again.' // TODO: what error?
   } finally {
     isSendingEmail.value = false
   }

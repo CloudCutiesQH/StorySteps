@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     const result = await readValidatedBody(event, bodySchema.safeParse);
     if (!result.success) {
         event.node.res.statusCode = 400;
-        event.node.res.end(JSON.stringify({ error: "Invalid request body", details: result.error.errors }));
+        event.node.res.end(JSON.stringify({ error: "Invalid request body", details: result.error }));
         return;
     }
     
@@ -174,11 +174,11 @@ export default defineEventHandler(async (event) => {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: "noreply@points.codaealab.com",
         to: body.email,
         subject: "StorySteps | Your Study Flashcards",
-        html: emailHtml
+        html: `${emailHtml}`,
     });
 
-    return { success: true };
+    return 200;
 })

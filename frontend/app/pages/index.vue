@@ -1,5 +1,97 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 dark:bg-gradient-to-br dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <!-- Loading Screen Overlay - Agent Conversation -->
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      leave-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="isGenerating"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm"
+      >
+        <div class="max-w-2xl w-full px-6">
+          <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                AI Agents at Work
+              </h3>
+              <p class="text-gray-600 dark:text-gray-400">
+                Watch our specialized agents collaborate to craft your story
+              </p>
+            </div>
+
+            <!-- Agent Conversation Feed -->
+            <div ref="feedContainer" class="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <TransitionGroup
+                enter-active-class="transition-all duration-300"
+                enter-from-class="opacity-0 translate-y-2"
+                leave-active-class="transition-all duration-200"
+                leave-to-class="opacity-0"
+              >
+                <div
+                  v-for="message in agentMessages"
+                  :key="message.id"
+                  class="flex items-start gap-3"
+                >
+                  <!-- Agent Avatar -->
+                  <div
+                    class="relative flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-md"
+                    :class="message.agentColor"
+                  >
+                    {{ message.agentInitial }}
+                    <div
+                      v-if="message.isActive"
+                      class="absolute w-10 h-10 rounded-full animate-ping opacity-30"
+                      :class="message.agentColor"
+                    />
+                  </div>
+
+                  <!-- Message Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                      <span class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ message.agentName }}
+                      </span>
+                      <span
+                        v-if="message.isActive"
+                        class="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400"
+                      >
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75" />
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500" />
+                        </span>
+                        thinking...
+                      </span>
+                    </div>
+                    <div
+                      class="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700"
+                      :class="{ 'opacity-50': message.isActive && !message.content }"
+                    >
+                      {{ message.content || '...' }}
+                    </div>
+                  </div>
+                </div>
+              </TransitionGroup>
+            </div>
+
+            <!-- Time Estimate -->
+            <div class="text-center pt-4 border-t border-gray-200 dark:border-gray-800">
+              <p class="text-xs text-gray-500 dark:text-gray-500">
+                ⏱️ This usually takes 1-2 minutes
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Transition>
     <!-- Story Generator + Stories Tiles -->
     <UContainer class="py-12">
       <div class="max-w-6xl mx-auto">
@@ -232,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from "vue";
+import { computed, onUnmounted, ref, watch, nextTick } from "vue";
 
 const BACKEND_ORIGIN = import.meta.env.VITE_BACKEND_ORIGIN ?? "http://localhost:3001";
 
@@ -339,7 +431,7 @@ const closeStream = () => {
 const openStream = () => {
   closeStream()
   streamId.value = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
-  eventSource = new EventSource(`${BACKEND_ORIGIN}/generate?streamId=${encodeURIComponent(streamId.value)}`)
+  eventSource = new EventSource(`/api/generate?streamId=${encodeURIComponent(streamId.value)}`)
   eventSource.addEventListener("graph", (event) => {
     try {
       const payload = JSON.parse(event.data)
@@ -382,7 +474,7 @@ async function generateStory() {
   openStream()
 
   try {
-    const response = await fetch(`${BACKEND_ORIGIN}/generate`, {
+    const response = await fetch(`/api/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

@@ -72,12 +72,11 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event)
 
   // Get backend URL from environment or use default
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
 
   try {
     // Forward the request to the backend
     // Backend expects: { prompt, theme }
-    const storyContent = await $fetch(`${backendUrl}/generate`, {
+    const storyContent = await $fetch(`/api/generate`, {
       method: 'POST',
       body: {
         prompt: body.topic,

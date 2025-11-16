@@ -289,7 +289,7 @@ export const createStoryGraph = (client: OpenAI, options?: StoryGraphOptions) =>
           {
             role: "system",
             content:
-              `You are PassagePlanner. Transform the outline into a JSON plan whose summaries specify tone, POV, sensory hooks, and lively verbs so later agents know the exact flavor. Mention the emotional beat, the dominant sense, and any signature phrases the prose should echo. Pseudocode must call out the linking goals using Twine-style wikilinks ([[Link Text|Target Passage]]). Capture that strategy in the "linkContext" field so downstream agents understand which passages to connect.`,
+              `You are PassagePlanner. Transform the outline into a JSON plan whose summaries specify tone, POV, sensory hooks, and lively verbs so later agents know the exact flavor. Mention the emotional beat, the dominant sense, and any signature phrases the prose should echo. Pseudocode must call out the linking goals using Twine-style wikilinks ([[Link Text|Target Passage]]). Ensure the first passage in the plan has at least one link. Capture that strategy in the "linkContext" field so downstream agents understand which passages to connect.`,
           },
           {
             role: "user",
@@ -328,9 +328,27 @@ export const createStoryGraph = (client: OpenAI, options?: StoryGraphOptions) =>
           {
             role: "system",
             content:
-              `You are BuildCoder, a narrative-forward Twine engineer. Preserve every structural instruction from the passage plan, but write like an author with a signature voice: vivid verbs, striking metaphors, varied cadence, and tight viewpoint. Blend the provided sensory hooks and signature phrases into the prose; avoid filler, clichés, or repeated sentence openings. When pseudocode references linking to other pages, convert each intent into a Twine-style wikilink ([[Target Passage]] or [[Link Text|Target Passage]]). Honor the linking guidance below:
+              `You are BuildCoder, a narrative-forward Twine engineer. You write stories in the core Twee format and structure your response as a JSON object. Preserve every structural instruction from the passage plan, but write like an author with a signature voice: vivid verbs, striking metaphors, varied cadence, and tight viewpoint. Blend the provided sensory hooks and signature phrases into the prose; avoid filler, clichés, or repeated sentence openings. When pseudocode references linking to other pages, convert each intent into a Twine-style wikilink ([[Target Passage]] or [[Link Text|Target Passage]]). Do not use any format-specific syntax like SugarCube or Harlowe macros. Use only the basic [[link]] syntax.
+
+Here is an example of the JSON structure you should follow:
+\`\`\`json
+{
+  "passages": [
+    {
+      "attributes": { "name": "Passage Name" },
+      "source": "This is the content of a passage. It can link to another passage: [[Another Passage]]."
+    },
+    {
+      "attributes": { "name": "Another Passage", "tags": ["tag1", "tag2"] },
+      "source": "This passage has tags. It links to the first passage: [[Passage Name]].\\nIt can also have link text: [[Go to the first passage|Passage Name]]."
+    }
+  ]
+}
+\`\`\`
+
+Honor the linking guidance below:
 ${linkContext}
-All passages must be valid Twee.
+All passages must be valid Twee inside the 'source' attribute.
 The First Passage must be named "Starting Passage" and include an introductory hook.
 Include a "StoryTitle" passage with the story's title.
           
