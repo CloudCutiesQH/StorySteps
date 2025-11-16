@@ -1,8 +1,11 @@
 import { defineEventHandler, readValidatedBody } from "h3";
 import { z } from 'zod';
 import { outlinePrompt } from "../../prompts"
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 import { OpenAI } from "openai";
+import { Story, Passage } from "twine-utils";
 
 const RequestBodySchema = z.object({
     prompt: z.string().min(1),
@@ -10,6 +13,7 @@ const RequestBodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+
     const result = await readValidatedBody(event, RequestBodySchema.safeParse);
 
     if (!result.success) {
@@ -17,9 +21,8 @@ export default defineEventHandler(async (event) => {
     }
     const body = result.data;
 
-
     const openai = new OpenAI({
-        apiKey: process.env.GEMINIKEY,
+        apiKey: process.env.GEMINI_API_KEY,
         baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
     })
 
@@ -46,107 +49,98 @@ export default defineEventHandler(async (event) => {
 
     const refinedOutline = outlineResp.choices[0].message.content
 
-    // Generate story from outline
-    const storyResp = await openai.chat.completions.create({
+
+    // Generate story in Twee format from outline using structured output
+    const storyResp = await openai.chat.completions.parse({
         model: "gemini-2.0-flash",
+        response_format: {
+            type: "json_schema",
+            json_schema: {
+                name: "TwinePassages",
+                strict: true,
+                schema: {
+                    type: "object",
+                    properties: {
+                        passages: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    attributes: {
+                                        type: "object",
+                                        properties: {
+                                            name: {
+                                                type: "string"
+                                            },
+                                            tags: {
+                                                type: "array",
+                                                items: {
+                                                    type: "string"
+                                                }
+                                            }
+                                        },
+                                        required: ["name"],
+                                        additionalProperties: false
+                                    },
+                                    source: {
+                                        type: "string"
+                                    }
+                                },
+                                required: ["attributes", "source"],
+                                additionalProperties: false
+                            }
+                        }
+                    },
+                    required: ["passages"],
+                    additionalProperties: false
+                }
+            }
+        },
         messages: [
-            { role: "user", content: `The theme is \n${body.theme} \n\nThe prompt is: \n${body.prompt}` },
-            { role: "user", content: `${refinedOutline}` }
-        ]
-    })
+            {
+                role: "system",
+                content: `You are an expert at generating working Twine stories in Harlowe 3 format. Return passages as a JSON object. Each passage should have:
+- name: The passage title
+- text: The passage content with Twine links using [[Link Text|Target Passage]] syntax and Harlowe macros like (set:), (if:), (link:)
+- tags: Optional array of tags
 
-    console.log("story resp.." + storyResp.choices[0].message.content)
+Produce 6-12 passages. Keep passages concise and self-contained.`
+            },
+            { role: "user", content: `The theme is \n${body.theme} \n\nThe prompt is: \n${body.prompt}\n\nThe outline is: \n${refinedOutline}` },
+        ],
+    });
 
-    // Convert Generated story into twee format (Harlowe)
-    const tweeResp = await openai.chat.completions.create({
-        model: "gemini-2.5-pro",
-        messages: [{
-            role: "system",
-            content: `You are an expert at generating working Twine stories. Return only a Twine-formatted story (no extra commentary). Use passage headers like:
-:: Passage Name
-and link using Twine double-bracket syntax:
-[[Link Text|Target Passage]]
+    
+    
+    const parsedResponse = storyResp.choices[0].message.parsed as unknown as { passages: Passage[] };
 
-Produce stories that contain 6-12 passages (nodes). Demonstrate basic Twine operations: linking to passages, labeled links, and simple Harlowe-compatible macros (use Harlowe 3.x syntax such as (set:), (if:), (link:)). Keep passages concise and self-contained.`
-        },
-        {
-            role: "user",
-            content: "Create a short educational Twine story about the water cycle."
-        },
-        {
-            role: "assistant",
-            content: `:: Start
-Welcome to the Water Cycle lesson. Choose a process to explore.
-[[Evaporation|Evaporation]]
-[[Condensation|Condensation]]
 
-:: Evaporation
-Heat causes water to become vapor and rise.
-[[Learn about condensation|Condensation]]
+    // 1. Map  plain JavaScript objects to actual Passage class instances.
+    const passageInstances = parsedResponse.passages.map(p => {
+        return new Passage({
+            attributes: p.attributes,
+            source: p.source
+        });
+    });
 
-:: Condensation
-Vapor cools and forms droplets in clouds.
-[[Next: Precipitation|Precipitation]]
+    // 2. Create the story and assign the INSTANCES to it.
+    const story = new Story({
+        passages: passageInstances, // Pass all instances here
+        javascript: "", 
+        stylesheet: "" 
+    });
 
-:: Precipitation
-Droplets fall as rain, snow, or hail.
-[[See collection|Collection]]
-
-:: Collection
-Water gathers in rivers, lakes, and oceans.
-[[Review the cycle|Start]]
-[[Finish lesson|End]]
-
-:: End
-You completed the Water Cycle mini-lesson. [[Restart|Start]]`
-        },
-        {
-            role: "user",
-            content: "Create a short choose-your-path story about exploring a forest."
-        },
-        {
-            role: "assistant",
-            content: `:: Start
-You stand at the forest edge. Will you enter or walk along the edge?
-[[Enter the forest|Forest]]
-[[Walk the edge|Edge Path]]
-
-:: Forest
-Tall trees surround you. A rustle appears ahead.
-[[Investigate the sound|Clearing]]
-[[Return to edge|Start]]
-
-:: Edge Path
-You follow the path and find a stream.
-[[Follow the stream|Stream]]
-[[Return to edge|Start]]
-
-:: Clearing
-You find a friendly deer. Learn from it or continue?
-[[Learn from the deer|Learn]]
-[[Continue deeper|Stream]]
-
-:: Stream
-The stream leads to a small waterfall.
-[[Approach waterfall|Waterfall]]
-[[Go back to clearing|Clearing]]
-
-:: Learn
-The deer teaches patience. (set: $learned to true)
-[[Thank the deer|End]]
-
-:: Waterfall
-A beautiful waterfall gives you energy.
-[[Return to start|Start]]
-[[Finish the journey|End]]
-
-:: End
-The journey ends. [[Play again|Start]]`
-        },
-        { role: "user", content: `The story is as follows: \n\n${storyResp.choices[0].message.content}\n\n Convert the story into a working Twine story in Harlowe format.` }
-        ]
-    })
-
-    return tweeResp.choices[0].message.content
-
+    // Optional but good practice: explicitly set the start passage by name.
+    // The library often defaults to the first passage if you don't.
+    story.startPassage = passageInstances.find(p => p.attributes.name === 'The Glitch') || passageInstances[0];
+    const twineHTML = story.toHTML();
+    
+    // Inject the generated story HTML into your template
+    const templatePath = join(process.cwd(), 'backend', 'server', 'routes', 'tempin.html');
+    let template = await readFile(templatePath, 'utf-8');
+    const finalHTML = template.replace('${{ story }}', twineHTML);
+    
+    // This will now work correctly!
+    console.log(finalHTML);
+    return finalHTML;
 })
