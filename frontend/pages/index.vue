@@ -8,9 +8,17 @@
           <p class="text-xl text-purple-100 mb-2">
             Learn through interactive stories
           </p>
-          <p class="text-lg text-purple-200">
+          <p class="text-lg text-purple-200 mb-6">
             Educational branching narratives that make complex concepts fun. Because everyone learns better through stories.
           </p>
+          <UButton
+            color="white"
+            variant="outline"
+            size="lg"
+            @click="viewQuizDemo"
+          >
+            View Quiz Demo
+          </UButton>
         </div>
       </UContainer>
     </div>
@@ -140,5 +148,9 @@ function getAgeRatingColor(ageRating: string): string {
 
 function startStory(id: string) {
   navigateTo(`/story/${id}`)
+}
+
+function viewQuizDemo() {
+  navigateTo('/quiz')
 }
 </script>
