@@ -265,7 +265,7 @@ async function generateStory() {
   error.value = null
 
   try {
-    // Call your backend API to generate the story
+    // Call backend API to generate the story
     const response = await $fetch('/api/generate-story', {
       method: 'POST',
       body: {
@@ -274,14 +274,22 @@ async function generateStory() {
       }
     })
 
-    // Response should include the story ID or HTML filename
-    // e.g., { storyId: 'generated-story-12345' }
-    const storyId = response.storyId || 'teststory'
+    // Store the story in localStorage
+    const storyData = {
+      id: response.storyId,
+      topic: topic.value,
+      theme: theme.value,
+      content: response.content,
+      createdAt: new Date().toISOString()
+    }
+
+    localStorage.setItem(`story-${response.storyId}`, JSON.stringify(storyData))
+    localStorage.setItem('latest-story', response.storyId)
 
     // Navigate to the story viewer page
-    navigateTo(`/story/${storyId}`)
+    navigateTo(`/story/${response.storyId}`)
   } catch (err: any) {
-    error.value = err.message || 'Failed to generate story. Please try again.'
+    error.value = err.data?.message || err.message || 'Failed to generate story. Please try again.'
     isGenerating.value = false
   }
 }
