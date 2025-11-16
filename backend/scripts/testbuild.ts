@@ -2,8 +2,38 @@ import {Story, StoryFormat, Passage} from "twine-utils"
 import { readFile } from "fs/promises";
 import { JSDOM } from "jsdom";
 
+// Monkey-patch the StoryFormat.prototype.load to add escape function to temporary window
+const originalLoad = StoryFormat.prototype.load;
+(StoryFormat.prototype as any).load = function(rawSource: string) {
+    const self = this as any;
+    return new Promise((resolve, reject) => {
+        const oldWindow = (global as any).window;
+        if (oldWindow?.storyFormat) {
+            reject(new Error('Asked to load a story format but window.storyFormat is currently defined. Did another format fail to load?'));
+        }
+        const loader = (attributes: any) => {
+            const hydrateResult: any = {};
+            if (typeof attributes.hydrate === 'string') {
+                const hydrateFunc = new Function(attributes.hydrate);
+                hydrateFunc.call(hydrateResult);
+            }
+            self.attributes = { ...hydrateResult, ...attributes };
+            (global as any).window = oldWindow;
+            resolve(undefined);
+        };
+        // Create a window object with all needed browser APIs
+        const mockWindow: any = { 
+            storyFormat: loader,
+            escape: encodeURIComponent,
+            navigator: { userAgent: 'Node.js' }
+        };
+        (global as any).window = mockWindow;
+        new Function(rawSource)();
+    });
+};
+
 async function main() {
-    // Set up a fake DOM environment for StoryFormat
+    // Set up a minimal fake DOM environment for Story.toHTML()
     const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
     (global as any).document = dom.window.document;
     (global as any).window = dom.window;
@@ -11,9 +41,6 @@ async function main() {
     (global as any).HTMLElement = dom.window.HTMLElement;
     (global as any).Element = dom.window.Element;
     (global as any).navigator = dom.window.navigator;
-    // Add deprecated but needed escape function
-    (dom.window as any).escape = encodeURIComponent;
-    (global as any).escape = encodeURIComponent;
     const story = new Story();
 
     story.attributes = {
@@ -106,7 +133,15 @@ async function main() {
     const formatSource = await readFile("./scripts/format.js", "utf-8");
     const format = new StoryFormat(formatSource)
 
-    console.log(format.publish(story));
+    const html = format.publish(story);
+    
+    // Write to file
+    const { writeFile } = await import("fs/promises");
+    const outputPath = "./scripts/output.html";
+    await writeFile(outputPath, html, "utf-8");
+    console.log(`✓ HTML generated successfully and saved to ${outputPath}`);
+    console.log(`✓ Story title: ${story.attributes.name || "Untitled"}`);
+    console.log(`✓ Number of passages: ${story.passages.length}`);
 }
 
 main().catch(console.error);
